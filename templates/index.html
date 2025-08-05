@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hackRx</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <!-- Header -->
+                <div class="text-center mb-5">
+                    <h1 class="display-5 fw-bold mb-3">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        hackRx
+                    </h1>
+                    <p class="lead text-muted">
+                        AI-powered insurance claim analyzer
+                    </p>
+                </div>
+
+                <!-- Search Form -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <form method="POST">
+                            <!-- Policy Selection -->
+                            {% if available_policies %}
+                            <div class="mb-3">
+                                <label for="selected_policy" class="form-label fw-semibold">
+                                    <i class="bi bi-folder2-open me-2"></i>
+                                    Select Policy Document
+                                </label>
+                                <select class="form-select form-select-lg" id="selected_policy" name="selected_policy">
+                                    <option value="all" {% if selected_policy == 'all' or not selected_policy %}selected{% endif %}>
+                                        Analyze against all policies
+                                    </option>
+                                    {% for policy in available_policies %}
+                                    <option value="{{ policy }}" {% if selected_policy == policy %}selected{% endif %}>
+                                        {{ policy }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    Choose a specific policy or analyze against all available policies
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Claim Description -->
+                            <div class="mb-3">
+                                <label for="claim_description" class="form-label fw-semibold">
+                                    <i class="bi bi-file-medical me-2"></i>
+                                    Describe your insurance claim
+                                </label>
+                                <textarea 
+                                    class="form-control form-control-lg" 
+                                    id="claim_description" 
+                                    name="claim_description" 
+                                    rows="4"
+                                    placeholder="Example: I am 32 years old and need an MRI scan for my knee injury. The procedure was performed at ABC Hospital in New York and costs $2,500."
+                                    required
+                                >{{ claim_description or '' }}</textarea>
+                                <div class="form-text">
+                                    Include details like age, procedure type, location, cost, and any relevant medical information
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-cpu me-2"></i>
+                                    Analyze Claim with AI
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                {% if result %}
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3">
+                            <i class="bi bi-clipboard-check me-2"></i>
+                            Claim Analysis Results
+                        </h5>
+                        
+                        <!-- Decision Badge -->
+                        <div class="mb-3">
+                            {% if result.decision == 'Approved' %}
+                            <span class="badge bg-success fs-6 px-3 py-2">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                CLAIM APPROVED
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger fs-6 px-3 py-2">
+                                <i class="bi bi-x-circle-fill me-2"></i>
+                                CLAIM REJECTED
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Amount -->
+                        {% if result.amount and result.amount != 'N/A' %}
+                        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                            <div class="me-3">
+                                <i class="bi bi-currency-dollar fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold">Estimated Payout</div>
+                                <div class="fs-5">{{ result.amount }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Justification -->
+                        <div class="card bg-body-secondary border-0">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-file-text me-2"></i>
+                                    Analysis & Justification
+                                </h6>
+                                <p class="card-text">{{ result.justification }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Details -->
+                        <div class="mt-3">
+                            {% if result.selected_policy and result.selected_policy != 'all' %}
+                            <div class="mb-2 p-2 bg-info bg-opacity-10 rounded">
+                                <small class="text-muted">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <strong>Analyzed against:</strong> {{ result.selected_policy }}
+                                </small>
+                            </div>
+                            {% elif result.selected_policy == 'all' %}
+                            <div class="mb-2 p-2 bg-info bg-opacity-10 rounded">
+                                <small class="text-muted">
+                                    <i class="bi bi-files me-1"></i>
+                                    <strong>Analyzed against:</strong> All available policies
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="p-3 bg-body-tertiary rounded">
+                                <small class="text-muted">
+                                    <strong>Original Claim:</strong><br>
+                                    "{{ result.claim_description }}"
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Policy Status, History, and Help -->
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card border-0">
+                            <div class="card-body p-4">
+                                <h6 class="card-title">
+                                    <i class="bi bi-files me-2"></i>
+                                    Available Policies
+                                </h6>
+                                {% if available_policies %}
+                                <ul class="list-unstyled mb-0 text-muted">
+                                    {% for policy in available_policies %}
+                                    <li class="mb-1">
+                                        <i class="bi bi-file-earmark-check text-success me-2"></i>
+                                        <small>{{ policy }}</small>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                    No policy documents found. Add PDF files to enable analysis.
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-0">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-clock-history me-2"></i>
+                                        Recent Searches
+                                    </h6>
+                                    <div>
+                                        <a href="/history" class="btn btn-outline-primary btn-sm me-1">
+                                            <i class="bi bi-list"></i>
+                                        </a>
+                                        <button onclick="clearHistory()" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {% if search_history %}
+                                <div class="search-history-list">
+                                    {% for item in search_history %}
+                                    <div class="border-bottom border-light pb-2 mb-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <small class="text-muted d-block">{{ item.timestamp }}</small>
+                                                <p class="mb-1 small text-dark">{{ item.claim_description }}</p>
+                                                <small class="text-muted">{{ item.selected_policy if item.selected_policy != 'all' else 'All Policies' }}</small>
+                                            </div>
+                                            <span class="badge {% if item.decision == 'Approved' %}bg-success{% else %}bg-danger{% endif %} ms-2 small">
+                                                {{ item.decision }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="text-center py-3">
+                                    <i class="bi bi-clock text-secondary" style="font-size: 1.5rem;"></i>
+                                    <p class="mt-2 mb-0 text-muted small">No search history yet</p>
+                                    <small class="text-muted">Your analyses will appear here</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-0">
+                            <div class="card-body p-4">
+                                <h6 class="card-title">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    How it works
+                                </h6>
+                                <ul class="list-unstyled mb-0 text-muted">
+                                    <li class="mb-2">
+                                        <i class="bi bi-dot"></i>
+                                        <small>Add PDF policy files to the project</small>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bi bi-dot"></i>
+                                        <small>Select specific policy or analyze all</small>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bi bi-dot"></i>
+                                        <small>Describe your claim in detail</small>
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-dot"></i>
+                                        <small>Get AI-powered decisions with reasoning</small>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all search history? This action cannot be undone.')) {
+                fetch('/api/clear_history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Error clearing history: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error clearing history');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
